@@ -1,11 +1,11 @@
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Token {
     Atom(Atom),
     Op(String),
     Eof,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Atom {
     Identifier(String),
     Number(String),
@@ -16,8 +16,8 @@ pub struct Lexer {
 }
 
 pub const OPERATORS: &[&str] = &[
-    "fun", "+", "-", "*", "/", "@", "{", "}", "[", "]", "(", ")", "<", "<=", ">", ">=", "==", "!=",
-    ":", ",", "=", "->", "!", "and", "or", "&", "|", "^", "~", ";", "**",
+    "fn", "+", "-", "*", "/", "@", "{", "}", "[", "]", "(", ")", "==", "!=",
+    ":", ",", "=", "->", "!", "&&", "||", ";"
 ];
 
 impl Lexer {

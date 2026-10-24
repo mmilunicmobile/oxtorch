@@ -1,26 +1,20 @@
 use std::{env, fs};
 
-use crate::lexer::{Lexer, Token};
+use crate::lexer::Lexer;
 
 mod lexer;
+mod parser;
 
 fn main() {
-    println!("Enter your string:");
-
     let args: Vec<String> = env::args().collect();
     let path = args.get(1).expect("requires 2 arguments");
 
     match fs::read_to_string(path) {
         Ok(contents) => {
             let mut name = Lexer::new(&contents);
+            let expr = parser::expr_bp(&mut name, 0);
 
-            loop {
-                let element = name.next();
-                println!("{:?}", element);
-                if let Token::Eof = element {
-                    break;
-                }
-            }
+            println!("{:?}", expr);
         }
         Err(err) => {
             panic!("Error {} reading file '{}'.", err, path);

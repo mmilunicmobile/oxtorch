@@ -3,9 +3,9 @@ fun matmul(A: float(N,M), B: float(M,L)): float(N,L) (
 )
 
 fun dotproduct(A: float(N), B: float(N)): float() (
-    sum{ A[i] * B[i] }
+    sum(A * B)
 )
 
-fun dotproduct(A: float(N), B: float(N)): float() {
-    sum( A * B )
-}
+fun main(): float() (
+    1.0
+)
