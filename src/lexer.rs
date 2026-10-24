@@ -17,7 +17,7 @@ pub struct Lexer {
 
 pub const OPERATORS: &[&str] = &[
     "fun", "+", "-", "*", "/", "@", "{", "}", "[", "]", "(", ")", "<", "<=", ">", ">=", "==", "!=",
-    ":", ",", "=", "->", "!", "&&", "||", "&", "|", "^", "~"
+    ":", ",", "=", "->", "!", "and", "or", "&", "|", "^", "~", ";", "**",
 ];
 
 impl Lexer {
@@ -43,9 +43,6 @@ impl Lexer {
                 }
                 _ => {
                     let w = Lexer::take_operator(&mut letters);
-                    if !OPERATORS.contains(&w.as_str()) {
-                        panic!("tried to take invalid operator")
-                    }
                     tokens.push(Token::Op(w));
                 }
             }
@@ -155,24 +152,20 @@ impl Lexer {
     }
 
     fn take_operator(letters: &mut Vec<char>) -> String {
-        let next = letters.last().unwrap_or(&' ');
-        let next_next = letters.get(letters.len() - 2).unwrap_or(&' ');
+        let double_pattern: String = letters.iter().rev().take(2).collect();
 
-        let double_pattern = match (next, next_next) {
-            ('=', '=') => String::from("=="),
-            ('!', '=') => String::from("!="),
-            ('-', '>') => String::from("->"),
-            ('<', '=') => String::from("<="),
-            ('>', '=') => String::from(">="),
-            (a, _) if a.is_whitespace() => panic!("tried to take invalid operator"),
-            (a, _) => a.to_string(),
-        };
+        let operator = OPERATORS
+            .iter()
+            .filter(|operator| double_pattern.starts_with(*operator))
+            .max_by_key(|operator| operator.len())
+            .copied()
+            .expect("tried to take invalid operator");
 
-        for _ in 0..double_pattern.len() {
+        for _ in operator.chars() {
             letters.pop();
         }
 
-        double_pattern
+        operator.to_string()
     }
 
     fn take_whitespace(letters: &mut Vec<char>) {

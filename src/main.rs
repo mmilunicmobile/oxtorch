@@ -1,4 +1,4 @@
-use std::io;
+use std::{env, fs};
 
 use crate::lexer::{Lexer, Token};
 
@@ -7,22 +7,23 @@ mod lexer;
 fn main() {
     println!("Enter your string:");
 
-    // Create a mutable string to store the input
-    let mut input = String::new();
+    let args: Vec<String> = env::args().collect();
+    let path = args.get(1).expect("requires 2 arguments");
 
-    // Read the line from standard input
-    io::stdin()
-        .read_line(&mut input)
-        .expect("Failed to read line");
+    match fs::read_to_string(path) {
+        Ok(contents) => {
+            let mut name = Lexer::new(&contents);
 
-    // Trim the trailing newline character
-    let mut name = Lexer::new(&input);
-
-    loop {
-        let element = name.next();
-        println!("{:?}", element);
-        if let Token::Eof = element {
-            break;
+            loop {
+                let element = name.next();
+                println!("{:?}", element);
+                if let Token::Eof = element {
+                    break;
+                }
+            }
+        }
+        Err(err) => {
+            panic!("Error {} reading file '{}'.", err, path);
         }
     }
 }
