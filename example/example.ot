@@ -1,11 +1,5 @@
-fun matmul(A: float(N,M), B: float(M,L)): float(N,L) (
-    sum{ A[i,j] * B[j,k] -> [i,k] }
-)
-
-fun dotproduct(A: float(N), B: float(N)): float() (
-    sum(A * B)
-)
-
-fun main(): float() (
-    1.0
+def matmul(A : float[N,M], B : float[M,O]) : float[N,O] as (
+    b = sum{A[i,j,k,] * B[k] -> [a,]};
+    a = b;
+    a
 )

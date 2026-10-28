@@ -12,7 +12,7 @@ fn main() {
     match fs::read_to_string(path) {
         Ok(contents) => {
             let mut name = Lexer::new(&contents);
-            let expr = parser::expr_bp(&mut name, 0);
+            let expr = parser::expr(&mut name);
 
             println!("{:?}", expr);
         }

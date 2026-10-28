@@ -12,6 +12,29 @@ pub enum Expr {
     Number(String)
 }
 
+pub fn expr(lexer: &mut Lexer) -> Vec<(Expr, Expr)> {
+    let mut out = Vec::new();
+    loop {
+        match lexer.next() {
+            Token::Op(s) if s == "def" => {},
+            Token::Eof => break,
+            _ => panic!("expected function definition")
+        }
+        let signature = expr_bp(lexer, 0);
+
+        match lexer.next() {
+            Token::Op(s) if s == "as" => {},
+            Token::Eof => break,
+            _ => panic!("expected function definition")
+        }
+
+        let body = expr_bp(lexer, 0);
+
+        out.push((signature, body));
+    }
+    out
+}
+
 /// parse through the inside of a comprehension
 fn expr_comprehension(lexer: &mut Lexer) -> (Expr, Vec<Expr>) {
     let mhs = expr_bp(lexer, 0);
@@ -43,7 +66,7 @@ fn expr_commas(lexer: &mut Lexer, end: Token) -> Vec<Expr> {
     out
 }
 
-pub fn expr_bp(lexer: &mut Lexer, min_bp: u8) -> Expr {
+fn expr_bp(lexer: &mut Lexer, min_bp: u8) -> Expr {
     let mut lhs = match lexer.next() {
         Token::Atom(Atom::Identifier(s)) => Expr::Identifier(s),
         Token::Atom(Atom::Number(s)) => Expr::Number(s),
@@ -129,6 +152,8 @@ fn prefix_binding_power(op: &str) -> ((), u8) {
 
 fn infix_binding_power(op: &str) -> Option<(u8, u8)> {
     Some(match op {
+        ";" => (3,4),
+        "=" => (5,6),
         ":" => (7,24),
         "||" => (9,10),
         "&&" => (11,12),
