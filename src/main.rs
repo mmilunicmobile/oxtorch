@@ -4,6 +4,7 @@ use crate::lexer::Lexer;
 
 mod lexer;
 mod parser;
+mod typer;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
