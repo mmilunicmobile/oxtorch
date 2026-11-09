@@ -1,4 +1,7 @@
-use crate::lexer::{Atom, Lexer, OpToken, Token};
+use crate::{
+    errors::CompilerError,
+    lexer::{Atom, Lexer, OpToken, Token},
+};
 
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub enum Expr {
@@ -6,7 +9,11 @@ pub enum Expr {
     PreOp(OpToken, Box<AnnotatedExpr>),
     PostOp(OpToken, Box<AnnotatedExpr>),
     Call(Box<AnnotatedExpr>, Vec<AnnotatedExpr>),
-    Comprehension(Option<Box<AnnotatedExpr>>, Box<AnnotatedExpr>, Vec<AnnotatedExpr>),
+    Comprehension(
+        Option<Box<AnnotatedExpr>>,
+        Box<AnnotatedExpr>,
+        Vec<AnnotatedExpr>,
+    ),
     IndexExpr(Box<AnnotatedExpr>, Vec<AnnotatedExpr>),
     Identifier(String),
     Number(String),
@@ -15,11 +22,12 @@ pub enum Expr {
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct AnnotatedExpr {
     expr: Expr,
-    pos: (usize, usize)
+    pos: (usize, usize),
 }
 
-pub fn expr(lexer: &mut Lexer) -> Vec<(AnnotatedExpr, AnnotatedExpr)> {
+pub fn expr(lexer: &mut Lexer) -> (Vec<(AnnotatedExpr, AnnotatedExpr)>, Vec<CompilerError>) {
     let mut out = Vec::new();
+
     loop {
         match lexer.next().token {
             Token::Op(OpToken::Def) => {}
@@ -38,7 +46,7 @@ pub fn expr(lexer: &mut Lexer) -> Vec<(AnnotatedExpr, AnnotatedExpr)> {
 
         out.push((signature, body));
     }
-    out
+    (out, Vec::new())
 }
 
 /// parse through the inside of a comprehension
@@ -47,9 +55,17 @@ fn expr_comprehension(lexer: &mut Lexer) -> (AnnotatedExpr, Vec<AnnotatedExpr>, 
     let next_token = lexer.next();
     match next_token.token {
         Token::Op(OpToken::Arrow) => {
-            assert_eq!(lexer.next().token, Token::Op(OpToken::LBracket), "expected bracket");
+            assert_eq!(
+                lexer.next().token,
+                Token::Op(OpToken::LBracket),
+                "expected bracket"
+            );
             let series = expr_commas(lexer, Token::Op(OpToken::RBracket));
-            assert_eq!(lexer.next().token, Token::Op(OpToken::RBracket), "expected bracket");
+            assert_eq!(
+                lexer.next().token,
+                Token::Op(OpToken::RBracket),
+                "expected bracket"
+            );
             let rbrace = lexer.next();
             assert_eq!(
                 rbrace.token,
@@ -70,8 +86,7 @@ fn expr_commas(lexer: &mut Lexer, end: Token) -> Vec<AnnotatedExpr> {
         return out;
     }
     out.push(expr_bp(lexer, 0));
-    while let Token::Op(OpToken::Comma) = lexer.peek().token
-    {
+    while let Token::Op(OpToken::Comma) = lexer.peek().token {
         lexer.next();
         if end == lexer.peek().token {
             return out;
@@ -86,9 +101,15 @@ fn expr_bp(lexer: &mut Lexer, min_bp: u8) -> AnnotatedExpr {
     let pos = next_tok.pos;
 
     let mut lhs = match next_tok.token {
-        Token::Atom(Atom::Identifier(s)) => AnnotatedExpr{expr: Expr::Identifier(s), pos},
-        Token::Atom(Atom::Number(s)) => AnnotatedExpr{expr: Expr::Number(s), pos},
-        Token::Op(OpToken::LParen)=> {
+        Token::Atom(Atom::Identifier(s)) => AnnotatedExpr {
+            expr: Expr::Identifier(s),
+            pos,
+        },
+        Token::Atom(Atom::Number(s)) => AnnotatedExpr {
+            expr: Expr::Number(s),
+            pos,
+        },
+        Token::Op(OpToken::LParen) => {
             let lhs = expr_bp(lexer, 0);
             let rparen = lexer.next();
             assert_eq!(
@@ -96,18 +117,27 @@ fn expr_bp(lexer: &mut Lexer, min_bp: u8) -> AnnotatedExpr {
                 Token::Op(OpToken::RParen),
                 "expected parenthesis"
             );
-            AnnotatedExpr { expr: lhs.expr, pos: (pos.0, rparen.pos.1)}
+            AnnotatedExpr {
+                expr: lhs.expr,
+                pos: (pos.0, rparen.pos.1),
+            }
         }
         Token::Op(OpToken::LBrace) => {
             let (mhs, indices, end) = expr_comprehension(lexer);
             let lhs = Expr::Comprehension(None, Box::new(mhs), indices);
-            AnnotatedExpr { expr: lhs, pos: (pos.0, end)}
+            AnnotatedExpr {
+                expr: lhs,
+                pos: (pos.0, end),
+            }
         }
         Token::Op(s) => {
             let ((), bp) = prefix_binding_power(s);
             let lhs = expr_bp(lexer, bp);
             let new_pos = (pos.0, lhs.pos.1);
-            AnnotatedExpr {expr: Expr::PreOp(s, Box::new(lhs)), pos: new_pos}
+            AnnotatedExpr {
+                expr: Expr::PreOp(s, Box::new(lhs)),
+                pos: new_pos,
+            }
         }
         Token::Eof => panic!("expected expression"),
     };
@@ -131,9 +161,16 @@ fn expr_bp(lexer: &mut Lexer, min_bp: u8) -> AnnotatedExpr {
             lhs = if op == OpToken::LBracket {
                 let indices = expr_commas(lexer, Token::Op(OpToken::RBracket));
                 let last_token = lexer.next();
-                assert_eq!(last_token.token, Token::Op(OpToken::RBracket), "expected bracket");
+                assert_eq!(
+                    last_token.token,
+                    Token::Op(OpToken::RBracket),
+                    "expected bracket"
+                );
                 let indexpr = Expr::IndexExpr(Box::new(lhs), indices);
-                AnnotatedExpr { expr: indexpr, pos: (lhs_pos.0, last_token.pos.1) }
+                AnnotatedExpr {
+                    expr: indexpr,
+                    pos: (lhs_pos.0, last_token.pos.1),
+                }
             } else if op == OpToken::LParen {
                 let parameters = expr_commas(lexer, Token::Op(OpToken::RParen));
                 let last_token = lexer.next();
@@ -143,12 +180,21 @@ fn expr_bp(lexer: &mut Lexer, min_bp: u8) -> AnnotatedExpr {
                     "expected parenthesis"
                 );
                 let callexpr = Expr::Call(Box::new(lhs), parameters);
-                AnnotatedExpr { expr: callexpr, pos: (lhs_pos.0, last_token.pos.1) }
+                AnnotatedExpr {
+                    expr: callexpr,
+                    pos: (lhs_pos.0, last_token.pos.1),
+                }
             } else if op == OpToken::LBrace {
                 let (mhs, indices, end) = expr_comprehension(lexer);
-                AnnotatedExpr { expr: Expr::Comprehension(Some(Box::new(lhs)), Box::new(mhs), indices), pos: (lhs_pos.0, end)}
+                AnnotatedExpr {
+                    expr: Expr::Comprehension(Some(Box::new(lhs)), Box::new(mhs), indices),
+                    pos: (lhs_pos.0, end),
+                }
             } else {
-                AnnotatedExpr { expr: Expr::PostOp(op, Box::new(lhs)), pos: (lhs_pos.0, op_token.pos.1) }
+                AnnotatedExpr {
+                    expr: Expr::PostOp(op, Box::new(lhs)),
+                    pos: (lhs_pos.0, op_token.pos.1),
+                }
             };
 
             continue;
@@ -161,7 +207,10 @@ fn expr_bp(lexer: &mut Lexer, min_bp: u8) -> AnnotatedExpr {
             lexer.next();
             let rhs = expr_bp(lexer, r_bp);
             let pos = (lhs.pos.0, rhs.pos.1);
-            lhs = AnnotatedExpr { expr: Expr::BinOp(op, Box::new(lhs), Box::new(rhs)), pos };
+            lhs = AnnotatedExpr {
+                expr: Expr::BinOp(op, Box::new(lhs), Box::new(rhs)),
+                pos,
+            };
             continue;
         }
 
@@ -172,7 +221,7 @@ fn expr_bp(lexer: &mut Lexer, min_bp: u8) -> AnnotatedExpr {
 }
 
 fn postfix_binding_power(op: OpToken) -> Option<(u8, ())> {
-    use  OpToken::*;
+    use OpToken::*;
     match op {
         LBracket => Some((31, ())),
         LParen => Some((31, ())),
@@ -184,7 +233,7 @@ fn postfix_binding_power(op: OpToken) -> Option<(u8, ())> {
 fn prefix_binding_power(op: OpToken) -> ((), u8) {
     use OpToken::*;
     match op {
-        Plus| Minus | Bang => ((), 21),
+        Plus | Minus | Bang => ((), 21),
         _ => panic!("unrecognized prefix operator"),
     }
 }
@@ -198,7 +247,7 @@ fn infix_binding_power(op: OpToken) -> Option<(u8, u8)> {
         Or => (9, 10),
         And => (11, 12),
         Eq | Neq | Leq | Geq | Lt | Gt => (13, 14),
-        Plus | Minus| At => (15, 16),
+        Plus | Minus | At => (15, 16),
         Times | Div => (17, 18),
         _ => return None,
     })

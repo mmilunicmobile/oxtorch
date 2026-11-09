@@ -1,5 +1,5 @@
 def matmul(A : float[N,M], B : float[M,O]) : float[N,O] as (
     b = sum{A[i,j,k,] * B[k] -> [a,]};
     a = b;
-    a
+    a = 2531531
 )

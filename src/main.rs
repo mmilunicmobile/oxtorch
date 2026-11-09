@@ -1,7 +1,8 @@
 use std::{env, fs};
 
-use crate::lexer::Lexer;
+use crate::{errors::ErrorPrinter, lexer::Lexer};
 
+mod errors;
 mod lexer;
 mod parser;
 mod typer;
@@ -12,10 +13,20 @@ fn main() {
 
     match fs::read_to_string(path) {
         Ok(contents) => {
-            let mut name = Lexer::new(&contents);
-            let expr = parser::expr(&mut name);
+            let (mut name, lexer_errors) = Lexer::new(&contents);
+            let error_printer = ErrorPrinter::new(&path, &contents);
+            let (expr, parser_errors) = parser::expr(&mut name);
 
-            println!("{:?}", expr);
+            let all_errors: Vec<errors::CompilerError> = vec![lexer_errors, parser_errors]
+                .into_iter()
+                .flatten()
+                .collect();
+
+            if all_errors.is_empty() {
+                println!("{:?}", expr);
+            } else {
+                error_printer.report(&all_errors);
+            }
         }
         Err(err) => {
             panic!("Error {} reading file '{}'.", err, path);
