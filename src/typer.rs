@@ -133,7 +133,7 @@ pub enum ScalarType {
     Boolean,
     Unit,
 }
-
+ 
 pub enum ExpressionType {
     UnboundVar,
     TypeVar,

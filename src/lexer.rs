@@ -1,9 +1,50 @@
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Token {
     Atom(Atom),
-    Op(String),
+    Op(OpToken),
     Eof,
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OpToken {
+    Def,
+
+    Plus,
+    Minus,
+    Times,
+    Div,
+    At,
+
+    LBrace, RBrace,
+    LBracket, RBracket,
+    LParen, RParen,
+
+    Eq, Neq,
+
+    Leq, Lt, Geq, Gt,
+
+    Colon,
+    Comma,
+
+    Assign,
+    Arrow,
+
+    Bang,
+    And, Or,
+
+    Semicolon,
+    As
+}
+
+const OPERATOR_SPELLINGS: &[&str] = &[
+    "==", "!=", "->", "&&", "||",
+    "+", "-", "*", "/", "@",
+    "{", "}", "[", "]", "(", ")",
+    ":", ",", "=", "!", ";",
+    "<=", "<", ">=", ">",
+];
+
+const MAX_OPERATOR_LEN: usize = 3;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Atom {
@@ -14,11 +55,6 @@ pub enum Atom {
 pub struct Lexer {
     tokens: Vec<Token>,
 }
-
-pub const OPERATORS: &[&str] = &[
-    "def", "+", "-", "*", "/", "@", "{", "}", "[", "]", "(", ")", "==", "!=", ":", ",", "=", "->",
-    "!", "&&", "||", ";", "as",
-];
 
 impl Lexer {
     pub fn new(input: &str) -> Self {
@@ -32,10 +68,10 @@ impl Lexer {
                 }
                 _ if a.is_alphabetic() || *a == '_' => {
                     let w = Lexer::take_word(&mut letters);
-                    tokens.push(if OPERATORS.contains(&w.as_str()) {
-                        Token::Op(w)
-                    } else {
-                        Token::Atom(Atom::Identifier(w))
+                    tokens.push(match w.as_str() {
+                         "def" => Token::Op(OpToken::Def),
+                         "as" => Token::Op(OpToken::As),
+                         _ => Token::Atom(Atom::Identifier(w))
                     });
                 }
                 _ if a.is_whitespace() => {
@@ -151,21 +187,48 @@ impl Lexer {
         out.iter().collect()
     }
 
-    fn take_operator(letters: &mut Vec<char>) -> String {
-        let double_pattern: String = letters.iter().rev().take(2).collect();
+    fn take_operator(letters: &mut Vec<char>) -> OpToken {
+        let double_pattern: String = letters.iter().rev().take(MAX_OPERATOR_LEN).collect();
 
-        let operator = OPERATORS
+        let spelling = OPERATOR_SPELLINGS
             .iter()
             .filter(|operator| double_pattern.starts_with(*operator))
             .max_by_key(|operator| operator.len())
             .copied()
             .expect("tried to take invalid operator");
 
-        for _ in operator.chars() {
+        for _ in spelling.chars() {
             letters.pop();
         }
 
-        operator.to_string()
+        match spelling {
+            "==" => OpToken::Eq,
+            "!=" => OpToken::Neq,
+            "<=" => OpToken::Leq,
+            ">=" => OpToken::Geq,
+            "<" => OpToken::Lt,
+            ">" => OpToken::Gt,
+            "->" => OpToken::Arrow,
+            "&&" => OpToken::And,
+            "||" => OpToken::Or,
+            "+" => OpToken::Plus,
+            "-" => OpToken::Minus,
+            "*" => OpToken::Times,
+            "/" => OpToken::Div,
+            "@" => OpToken::At,
+            "{" => OpToken::LBrace,
+            "}" => OpToken::RBrace,
+            "[" => OpToken::LBracket,
+            "]" => OpToken::RBracket,
+            "(" => OpToken::LParen,
+            ")" => OpToken::RParen,
+            ":" => OpToken::Colon,
+            "," => OpToken::Comma,
+            "=" => OpToken::Assign,
+            "!" => OpToken::Bang,
+            ";" => OpToken::Semicolon,
+            _ => unreachable!("operator spelling has no token"),
+        }
     }
 
     fn take_whitespace(letters: &mut Vec<char>) {
