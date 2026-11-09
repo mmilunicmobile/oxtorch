@@ -5,6 +5,12 @@ pub enum Token {
     Eof,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AnnotatedToken {
+    pub token: Token,
+    pub pos: (usize, usize)
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OpToken {
     Def,
@@ -53,48 +59,54 @@ pub enum Atom {
 }
 
 pub struct Lexer {
-    tokens: Vec<Token>,
+    tokens: Vec<AnnotatedToken>,
+    start_len: usize
 }
 
 impl Lexer {
     pub fn new(input: &str) -> Self {
         let mut letters: Vec<char> = input.chars().rev().collect();
+        let start_len = letters.len();
         let mut tokens = Vec::new();
 
         while let Some(a) = letters.last() {
-            match a {
+            let start = start_len - letters.len();
+            let token = match a {
                 '0'..='9' => {
-                    tokens.push(Token::Atom(Atom::Number(Lexer::take_number(&mut letters))));
+                    Token::Atom(Atom::Number(Lexer::take_number(&mut letters)))
                 }
                 _ if a.is_alphabetic() || *a == '_' => {
                     let w = Lexer::take_word(&mut letters);
-                    tokens.push(match w.as_str() {
+                    match w.as_str() {
                          "def" => Token::Op(OpToken::Def),
                          "as" => Token::Op(OpToken::As),
                          _ => Token::Atom(Atom::Identifier(w))
-                    });
+                    }
                 }
                 _ if a.is_whitespace() => {
                     Lexer::take_whitespace(&mut letters);
+                    continue;
                 }
                 _ => {
                     let w = Lexer::take_operator(&mut letters);
-                    tokens.push(Token::Op(w));
+                    Token::Op(w)
                 }
-            }
+            };
+            let end = start_len - letters.len();
+            tokens.push(AnnotatedToken {token, pos: (start, end)});
         }
 
         tokens.reverse();
 
-        Lexer { tokens }
+        Lexer { tokens, start_len }
     }
 
-    pub fn next(&mut self) -> Token {
-        self.tokens.pop().unwrap_or(Token::Eof)
+    pub fn next(&mut self) -> AnnotatedToken {
+        self.tokens.pop().unwrap_or(AnnotatedToken { token: Token::Eof, pos: (self.start_len, self.start_len) } )
     }
 
-    pub fn peek(&mut self) -> Token {
-        self.tokens.last().cloned().unwrap_or(Token::Eof)
+    pub fn peek(&mut self) -> AnnotatedToken {
+        self.tokens.last().cloned().unwrap_or(AnnotatedToken { token: Token::Eof, pos: (self.start_len, self.start_len) } )
     }
 
     /// Takes until it runs into an ending of the word
