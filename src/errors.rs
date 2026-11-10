@@ -78,7 +78,12 @@ impl<'a> ErrorPrinter<'a> {
     }
 
     pub fn report(&self, errors: &[CompilerError]) {
-        for err in errors {
+        let mut sorted_errors = errors.to_vec();
+        sorted_errors.sort_by_key(|error| match error {
+            CompilerError::PositionError(_, (start, _)) => *start,
+        });
+
+        for err in &sorted_errors {
             self.report_one(err);
             println!();
         }
