@@ -1,1 +1,1 @@
-sum{A[i,j] * B[j,k] -> [i,k]}
+def  sum{A[i,j] * B[,k] -> [i,k]} as

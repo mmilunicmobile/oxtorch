@@ -15,7 +15,10 @@ fn main() {
         Ok(contents) => {
             let (mut name, lexer_errors) = Lexer::new(&contents);
             let error_printer = ErrorPrinter::new(&path, &contents);
-            let (expr, parser_errors) = parser::expr(&mut name);
+            let (expr, parser_errors) = match parser::expr(&mut name) {
+                Ok(expr) => (expr, Vec::new()),
+                Err(errors) => (Vec::new(), errors),
+            };
 
             let all_errors: Vec<errors::CompilerError> = vec![lexer_errors, parser_errors]
                 .into_iter()

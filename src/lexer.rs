@@ -104,14 +104,14 @@ impl Lexer {
     pub fn next(&mut self) -> AnnotatedToken {
         self.tokens.pop().unwrap_or(AnnotatedToken {
             token: Token::Eof,
-            pos: (self.start_len, self.start_len),
+            pos: (self.start_len, self.start_len + 1),
         })
     }
 
     pub fn peek(&mut self) -> AnnotatedToken {
         self.tokens.last().cloned().unwrap_or(AnnotatedToken {
             token: Token::Eof,
-            pos: (self.start_len, self.start_len),
+            pos: (self.start_len, self.start_len + 1),
         })
     }
 

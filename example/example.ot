@@ -1,5 +1,5 @@
-def matmul(A : float[N,M], B : float[M,O]) : float[N,O] as (
-    b = sum{A[i,j,k,] * B[k] -> [a,]};
-    a = b;
-    a = 2531531
+def this(is: my, kingdom: come) as (
+    hello + world;
+    i - love * (my - job;
+    skibidi)
 )

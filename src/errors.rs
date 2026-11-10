@@ -1,3 +1,5 @@
+use colored::Colorize;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CompilerError {
     PositionError(String, (usize, usize)),
@@ -46,24 +48,28 @@ impl<'a> ErrorPrinter<'a> {
                     .take(end_line - start_line + 1)
                     .collect();
 
-                println!("error: {}", message);
+                let size = lines.last().map(|(a,_)| a.to_string().len()).unwrap_or(0);
+
+                println!("{}: {}", "error".red().bold(), message.bold());
                 println!(
-                    "  --> {}:{}:{}",
+                    "{:>size$}{} {}:{}:{}",
+                    "",
+                    "-->".blue().bold(),
                     self.path,
                     start_line + 1,
                     start_offset + 1
                 );
 
                 for (i, s) in lines {
-                    println!("{:>5}| {s}", i + 1);
-                    let start = if i == start_line { start_offset } else { 0 };
+                    println!("{:>size$} {} {s}", (i + 1).to_string().blue().bold(), "|".blue().bold());
+                    let start: usize = if i == start_line { start_offset } else { 0 };
                     let end = if i == end_line { end_offset } else { s.len() };
-                    print!("     | ");
+                    print!("{:>size$}{}","", " | ".blue().bold());
                     for _ in 0..start {
                         print!(" ");
                     }
                     for _ in start..end {
-                        print!("^")
+                        print!("{}", "^".red().bold())
                     }
                     println!();
                 }
@@ -79,8 +85,8 @@ impl<'a> ErrorPrinter<'a> {
         let err_count = errors.len();
         let plural_err = if err_count == 1 { "" } else { "s" };
         println!(
-            "error: could not compile `{}` due to {err_count} previous error{plural_err}",
-            self.path
+            "{}: could not compile `{}` due to {err_count} previous error{plural_err}",
+            "error".red().bold(), self.path
         );
     }
 }
