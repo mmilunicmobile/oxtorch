@@ -59,9 +59,11 @@ const OPERATOR_SPELLINGS: &[&str] = &[
 
 const MAX_OPERATOR_LEN: usize = 3;
 
+pub type Symbol = string_interner::DefaultSymbol;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Atom {
-    Identifier(String),
+    Identifier(Symbol),
     Number(String),
 }
 
@@ -71,7 +73,10 @@ pub struct Lexer {
 }
 
 impl Lexer {
-    pub fn new(input: &str) -> (Self, Vec<CompilerError>) {
+    pub fn new(
+        input: &str,
+        mut interner: impl FnMut(String) -> Symbol,
+    ) -> (Self, Vec<CompilerError>) {
         let mut letters: Vec<(usize, char)> = input.chars().enumerate().collect();
         letters.reverse();
 
@@ -86,7 +91,7 @@ impl Lexer {
                 Lexer::take_whitespace(&mut letters);
                 continue;
             }
-            let maybe_token = fun_name(&mut letters, start_len, a);
+            let maybe_token = get_sub_token(&mut letters, start_len, a, &mut interner);
             match maybe_token {
                 Ok(a) => tokens.push(a),
                 Err(e) => {
@@ -280,10 +285,11 @@ impl Lexer {
     }
 }
 
-fn fun_name(
+fn get_sub_token(
     letters: &mut Vec<(usize, char)>,
     start_len: usize,
     a: char,
+    mut interner: impl FnMut(String) -> Symbol,
 ) -> Result<AnnotatedToken, CompilerError> {
     let start = start_len - letters.len();
     let token = match a {
@@ -293,7 +299,7 @@ fn fun_name(
             match w.as_str() {
                 "def" => Token::Op(OpToken::Def),
                 "as" => Token::Op(OpToken::As),
-                _ => Token::Atom(Atom::Identifier(w)),
+                _ => Token::Atom(Atom::Identifier(interner(w))),
             }
         }
         _ => {

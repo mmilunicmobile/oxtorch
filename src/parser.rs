@@ -1,6 +1,6 @@
 use crate::{
     errors::CompilerError,
-    lexer::{AnnotatedToken, Atom, Lexer, OpToken, Token},
+    lexer::{self, AnnotatedToken, Atom, Lexer, OpToken, Token},
 };
 
 #[derive(PartialEq, Eq, Debug, Clone)]
@@ -15,7 +15,7 @@ pub enum Expr {
         Vec<AnnotatedExpr>,
     ),
     IndexOp(Box<AnnotatedExpr>, Vec<AnnotatedExpr>),
-    Identifier(String),
+    Identifier(lexer::Symbol),
     Number(String),
 }
 
