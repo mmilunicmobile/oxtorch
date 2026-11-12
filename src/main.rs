@@ -14,7 +14,7 @@ fn main() {
     match fs::read_to_string(path) {
         Ok(contents) => {
             let (mut name, lexer_errors) = Lexer::new(&contents);
-            let error_printer = ErrorPrinter::new(&path, &contents);
+            let error_printer = ErrorPrinter::new(path, &contents);
             let (expr, parser_errors) = match parser::expr(&mut name) {
                 Ok(expr) => (expr, Vec::new()),
                 Err(errors) => (Vec::new(), errors),

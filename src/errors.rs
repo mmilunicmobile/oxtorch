@@ -48,7 +48,7 @@ impl<'a> ErrorPrinter<'a> {
                     .take(end_line - start_line + 1)
                     .collect();
 
-                let size = lines.last().map(|(a,_)| a.to_string().len()).unwrap_or(0);
+                let size = lines.last().map(|(a, _)| a.to_string().len()).unwrap_or(0);
 
                 println!("{}: {}", "error".red().bold(), message.bold());
                 println!(
@@ -61,10 +61,14 @@ impl<'a> ErrorPrinter<'a> {
                 );
 
                 for (i, s) in lines {
-                    println!("{:>size$} {} {s}", (i + 1).to_string().blue().bold(), "|".blue().bold());
+                    println!(
+                        "{:>size$} {} {s}",
+                        (i + 1).to_string().blue().bold(),
+                        "|".blue().bold()
+                    );
                     let start: usize = if i == start_line { start_offset } else { 0 };
                     let end = if i == end_line { end_offset } else { s.len() };
-                    print!("{:>size$}{}","", " | ".blue().bold());
+                    print!("{:>size$}{}", "", " | ".blue().bold());
                     for _ in 0..start {
                         print!(" ");
                     }
@@ -91,7 +95,8 @@ impl<'a> ErrorPrinter<'a> {
         let plural_err = if err_count == 1 { "" } else { "s" };
         println!(
             "{}: could not compile `{}` due to {err_count} previous error{plural_err}",
-            "error".red().bold(), self.path
+            "error".red().bold(),
+            self.path
         );
     }
 }

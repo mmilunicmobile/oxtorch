@@ -14,7 +14,7 @@ pub enum Expr {
         Box<AnnotatedExpr>,
         Vec<AnnotatedExpr>,
     ),
-    IndexExpr(Box<AnnotatedExpr>, Vec<AnnotatedExpr>),
+    IndexOp(Box<AnnotatedExpr>, Vec<AnnotatedExpr>),
     Identifier(String),
     Number(String),
 }
@@ -527,7 +527,7 @@ fn expr_bp(lexer: &mut Lexer, min_bp: u8) -> ParsingResult<AnnotatedExpr> {
                     )]);
                 }
                 let indices = indices?;
-                let indexpr = Expr::IndexExpr(Box::new(lhs), indices);
+                let indexpr = Expr::IndexOp(Box::new(lhs), indices);
                 AnnotatedExpr {
                     expr: indexpr,
                     pos: (lhs_pos.0, last_token.pos.1),
