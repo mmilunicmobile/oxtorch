@@ -9,3 +9,4 @@ OxTorch is a statically shape-typed language for tensor programming that transpi
 - [x] add positional information for tokens and the parse tree to print nice errors
 - [x] add nice print errors
 - [ ] simplify the escaping code.
+- [ ] add typechecking

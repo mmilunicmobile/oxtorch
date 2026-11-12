@@ -107,7 +107,7 @@ pub fn expr(lexer: &mut Lexer) -> ParsingResult<Vec<(AnnotatedExpr, AnnotatedExp
             }
         }
 
-        let body = expr_bp(lexer, 0);
+        let body = definition_body(lexer);
 
         if signature.is_err() || body.is_err() {
             escape_to(lexer, &[OpToken::Def]);
@@ -124,6 +124,55 @@ pub fn expr(lexer: &mut Lexer) -> ParsingResult<Vec<(AnnotatedExpr, AnnotatedExp
     }
 
     Ok(out)
+}
+
+fn definition_body(lexer: &mut Lexer) -> ParsingResult<AnnotatedExpr> {
+    let lparen = lexer.next();
+    if lparen.token != Token::Op(OpToken::LParen) {
+        return Err(vec![CompilerError::PositionError(
+            "expected left parenthesis around definition body here".to_string(),
+            lparen.pos,
+        )]);
+    }
+
+    let body = match expr_bp(lexer, 0) {
+        Ok(body) => body,
+        Err(mut errors) => loop {
+            escape_to(lexer, &[OpToken::Semicolon, OpToken::RParen]);
+            match lexer.peek().token {
+                Token::Op(OpToken::Semicolon) => {
+                    lexer.next();
+                    match expr_bp(lexer, 0) {
+                        Ok(_) => {}
+                        Err(mut more_errors) => errors.append(&mut more_errors),
+                    }
+                }
+                Token::Op(OpToken::RParen) => {
+                    lexer.next();
+                    return Err(errors);
+                }
+                _ => {
+                    let token = lexer.peek();
+                    errors.push(CompilerError::PositionError(
+                        "expected right parenthesis around definition body here".to_string(),
+                        token.pos,
+                    ));
+                    return Err(errors);
+                }
+            }
+        },
+    };
+
+    let rparen = lexer.next();
+    if rparen.token != Token::Op(OpToken::RParen) {
+        escape_to(lexer, &[OpToken::Def]);
+        return Err(vec![CompilerError::PositionError(
+            "expected right parenthesis around definition body here".to_string(),
+            rparen.pos,
+        )]);
+    }
+
+    Ok(body)
 }
 
 fn escape_to(lexer: &mut Lexer, token: &[OpToken]) {
